@@ -233,9 +233,9 @@ function SortableRow({
         isDragging && 'bg-secondary shadow-lg'
       )}
     >
-      {/* Drag Handle + Sequence */}
-      <td className="w-[60px] px-2 py-2">
-        <div className="flex items-center gap-1">
+      {/* Drag Handle + Sequence (촬영순서) */}
+      <td className="w-[70px] px-2 py-2">
+        <div className="flex items-center justify-center gap-1">
           <button
             {...attributes}
             {...listeners}
@@ -250,25 +250,27 @@ function SortableRow({
       </td>
 
       {/* S# */}
-      <td className="w-[70px] px-2 py-2">
+      <td className="w-[60px] px-2 py-2">
         <EditableCell
           value={item.scene_number || ''}
           onChange={(v) => onUpdate(item.id, 'scene_number', v || null)}
           placeholder="-"
+          className="text-center"
         />
       </td>
 
       {/* CUT */}
-      <td className="w-[70px] px-2 py-2">
+      <td className="w-[60px] px-2 py-2">
         <EditableCell
           value={item.cut_number || ''}
           onChange={(v) => onUpdate(item.id, 'cut_number', v || null)}
           placeholder="-"
+          className="text-center"
         />
       </td>
 
       {/* M/D/E/N */}
-      <td className="w-[80px] px-2 py-2">
+      <td className="w-[70px] px-2 py-2">
         <DropdownSelect
           value={item.scene_time}
           options={SCENE_TIME_OPTIONS}
@@ -277,7 +279,7 @@ function SortableRow({
       </td>
 
       {/* I/E */}
-      <td className="w-[70px] px-2 py-2">
+      <td className="w-[50px] px-2 py-2">
         <DropdownSelect
           value={item.scene_location_type}
           options={LOCATION_TYPE_OPTIONS}
@@ -285,26 +287,28 @@ function SortableRow({
         />
       </td>
 
-      {/* Start Time */}
-      <td className="w-[90px] px-2 py-2">
+      {/* Start Time (시작) */}
+      <td className="w-[85px] px-2 py-2">
         <EditableCell
           type="time"
           value={item.start_time || ''}
           onChange={(v) => onUpdate(item.id, 'start_time', v || null)}
+          className="text-center"
         />
       </td>
 
-      {/* End Time */}
-      <td className="w-[90px] px-2 py-2">
+      {/* End Time (끝) */}
+      <td className="w-[85px] px-2 py-2">
         <EditableCell
           type="time"
           value={item.end_time || ''}
           onChange={(v) => onUpdate(item.id, 'end_time', v || null)}
+          className="text-center"
         />
       </td>
 
       {/* 촬영장소 */}
-      <td className="w-[140px] px-2 py-2">
+      <td className="w-[200px] px-2 py-2">
         <EditableCell
           value={item.location || ''}
           onChange={(v) => onUpdate(item.id, 'location', v || null)}
@@ -313,7 +317,7 @@ function SortableRow({
       </td>
 
       {/* 촬영내용 */}
-      <td className="min-w-[200px] px-2 py-2">
+      <td className="min-w-[300px] px-2 py-2">
         <EditableCell
           type="textarea"
           value={item.content}
@@ -323,7 +327,7 @@ function SortableRow({
       </td>
 
       {/* 주요인물 */}
-      <td className="w-[180px] px-2 py-2">
+      <td className="w-[150px] px-2 py-2">
         <EditableCell
           value={item.cast_ids.join(', ')}
           onChange={(v) => onUpdate(item.id, 'cast_ids', v.split(',').map(s => s.trim()).filter(Boolean))}
@@ -332,7 +336,7 @@ function SortableRow({
       </td>
 
       {/* 비고 */}
-      <td className="w-[160px] px-2 py-2">
+      <td className="w-[150px] px-2 py-2">
         <EditableCell
           value={item.notes || ''}
           onChange={(v) => onUpdate(item.id, 'notes', v || null)}
@@ -429,24 +433,24 @@ export function ShotPlanTable({
         <table className="w-full">
           <thead className="sticky top-0 z-10 border-b-2 border-border bg-secondary">
             <tr className="text-left text-xs font-semibold tracking-wider text-muted-foreground">
-              <th className="w-[80px] px-2 py-3">촬영순서</th>
-              <th className="w-[70px] px-2 py-3">S#</th>
-              <th className="w-[70px] px-2 py-3">CUT</th>
-              <th className="w-[80px] px-2 py-3 text-center">M/D/E/N</th>
-              <th className="w-[60px] px-2 py-3 text-center">I/E</th>
-              <th className="w-[90px] px-2 py-3" colSpan={2}>
-                <div className="flex flex-col">
+              <th className="w-[70px] px-2 py-3 text-center">촬영순서</th>
+              <th className="w-[60px] px-2 py-3 text-center">S#</th>
+              <th className="w-[60px] px-2 py-3 text-center">CUT</th>
+              <th className="w-[70px] px-2 py-3 text-center">M/D/E/N</th>
+              <th className="w-[50px] px-2 py-3 text-center">I/E</th>
+              <th className="px-2 py-3 text-center" colSpan={2}>
+                <div className="flex flex-col items-center">
                   <span>촬영시간</span>
-                  <div className="flex gap-4 text-[10px] font-normal">
-                    <span className="w-[85px]">시작</span>
-                    <span>끝</span>
+                  <div className="flex w-full text-[10px] font-normal">
+                    <span className="flex-1 text-center">시작</span>
+                    <span className="flex-1 text-center">끝</span>
                   </div>
                 </div>
               </th>
-              <th className="w-[140px] px-2 py-3">촬영장소</th>
-              <th className="min-w-[200px] px-2 py-3">촬영내용</th>
-              <th className="w-[180px] px-2 py-3">주요인물</th>
-              <th className="w-[160px] px-2 py-3">비고</th>
+              <th className="w-[200px] px-2 py-3">촬영장소</th>
+              <th className="min-w-[300px] px-2 py-3">촬영내용</th>
+              <th className="w-[150px] px-2 py-3">주요인물</th>
+              <th className="w-[150px] px-2 py-3">비고</th>
               <th className="w-[40px] px-2 py-3"></th>
             </tr>
           </thead>

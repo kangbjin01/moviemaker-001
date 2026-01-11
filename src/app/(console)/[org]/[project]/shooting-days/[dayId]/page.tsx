@@ -145,89 +145,161 @@ export default function ShootingDayPage() {
           </div>
         </div>
 
-        {/* Day Header Info */}
+        {/* Day Header Info - 기본 정보 */}
         <div className="border-b border-border bg-muted/30 px-6 py-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Shoot Date
-              </label>
-              <Input
-                type="date"
-                defaultValue={shootingDay.shoot_date}
-                onChange={(e) => debouncedUpdateHeader('shoot_date', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                Call Time
-              </label>
-              <Input
-                type="time"
-                defaultValue={shootingDay.call_time || ''}
-                onChange={(e) => debouncedUpdateHeader('call_time', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Shooting Start
-              </label>
-              <Input
-                type="time"
-                defaultValue={shootingDay.shooting_time_start || ''}
-                onChange={(e) => debouncedUpdateHeader('shooting_time_start', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Shooting End
-              </label>
-              <Input
-                type="time"
-                defaultValue={shootingDay.shooting_time_end || ''}
-                onChange={(e) => debouncedUpdateHeader('shooting_time_end', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <MapPin className="h-3 w-3" />
-                Base Location
-              </label>
-              <Input
-                type="text"
-                placeholder="Location"
-                defaultValue=""
-                className="h-9"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">
-                Weather
-              </label>
-              <Input
-                type="text"
-                defaultValue={shootingDay.weather || ''}
-                onChange={(e) => debouncedUpdateHeader('weather', e.target.value)}
-                className="h-9"
-              />
-            </div>
-          </div>
-
-          {/* Sunrise/Sunset Info */}
-          <div className="mt-4 flex items-center gap-6 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Sun className="h-4 w-4 text-amber-500" />
-              Sunrise: {shootingDay.sunrise || '--:--'}
-            </span>
-            <span className="flex items-center gap-1">
-              <Sunset className="h-4 w-4 text-orange-500" />
-              Sunset: {shootingDay.sunset || '--:--'}
-            </span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                {/* Row 1 */}
+                <tr className="border-b border-border/50">
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">촬영일시</td>
+                  <td className="px-3 py-2 w-40">
+                    <Input
+                      type="date"
+                      defaultValue={shootingDay.shoot_date}
+                      onChange={(e) => debouncedUpdateHeader('shoot_date', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">집합시간</td>
+                  <td className="px-3 py-2 w-28">
+                    <Input
+                      type="time"
+                      defaultValue={shootingDay.call_time || ''}
+                      onChange={(e) => debouncedUpdateHeader('call_time', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">일기예보</td>
+                  <td className="px-3 py-2 w-28">
+                    <Input
+                      type="text"
+                      placeholder="맑음"
+                      defaultValue={shootingDay.weather || ''}
+                      onChange={(e) => debouncedUpdateHeader('weather', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">최저온도</td>
+                  <td className="px-3 py-2 w-20">
+                    <Input
+                      type="text"
+                      placeholder="25"
+                      defaultValue={shootingDay.temp_low || ''}
+                      onChange={(e) => debouncedUpdateHeader('temp_low', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                </tr>
+                {/* Row 2 */}
+                <tr className="border-b border-border/50">
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap" rowSpan={2}>촬영장소</td>
+                  <td className="px-3 py-2" rowSpan={2} colSpan={1}>
+                    <Input
+                      type="text"
+                      placeholder="서울 동작구 동작대로 29길 119"
+                      defaultValue={shootingDay.base_location || ''}
+                      onChange={(e) => debouncedUpdateHeader('base_location', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap" rowSpan={2}>집합장소</td>
+                  <td className="px-3 py-2" rowSpan={2}>
+                    <Input
+                      type="text"
+                      placeholder="촬영 장소와 동일"
+                      defaultValue={shootingDay.assembly_location || ''}
+                      onChange={(e) => debouncedUpdateHeader('assembly_location', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">강수확률</td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      placeholder="45%"
+                      defaultValue={shootingDay.precipitation || ''}
+                      onChange={(e) => debouncedUpdateHeader('precipitation', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">최고온도</td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      placeholder="32"
+                      defaultValue={shootingDay.temp_high || ''}
+                      onChange={(e) => debouncedUpdateHeader('temp_high', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                </tr>
+                {/* Row 3 */}
+                <tr className="border-b border-border/50">
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1">
+                      <Sun className="h-3 w-3 text-amber-500" />
+                      일출시간
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      placeholder="5시 46분"
+                      defaultValue={shootingDay.sunrise || ''}
+                      onChange={(e) => debouncedUpdateHeader('sunrise', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1">
+                      <Sunset className="h-3 w-3 text-orange-500" />
+                      일몰시간
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="text"
+                      placeholder="19시 28분"
+                      defaultValue={shootingDay.sunset || ''}
+                      onChange={(e) => debouncedUpdateHeader('sunset', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                </tr>
+                {/* Row 4 */}
+                <tr>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">촬영시간</td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="time"
+                      defaultValue={shootingDay.shooting_time_start || ''}
+                      onChange={(e) => debouncedUpdateHeader('shooting_time_start', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">종료시간</td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="time"
+                      defaultValue={shootingDay.shooting_time_end || ''}
+                      onChange={(e) => debouncedUpdateHeader('shooting_time_end', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                  <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">기타사항</td>
+                  <td className="px-3 py-2" colSpan={3}>
+                    <Input
+                      type="text"
+                      placeholder="기타 참고사항"
+                      defaultValue={shootingDay.notes || ''}
+                      onChange={(e) => debouncedUpdateHeader('notes', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
