@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useCallback, useState, useRef } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { AppShell } from '@/components/layout'
 import { ShotPlanTable, type ShotPlanItem } from '@/components/shooting-day'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { AddressInput } from '@/components/ui/address-input'
 import {
   ArrowLeft,
   FileSpreadsheet,
@@ -44,22 +45,30 @@ export default function ShootingDayPage() {
 
   // 날씨 조회 상태
   const [isLoadingWeather, setIsLoadingWeather] = useState(false)
-  const dateRef = useRef<HTMLInputElement>(null)
-  const locationRef = useRef<HTMLInputElement>(null)
+  const [localDate, setLocalDate] = useState('')
+  const [localLocation, setLocalLocation] = useState('')
+
+  // shootingDay 데이터 로드 시 초기값 설정
+  useEffect(() => {
+    if (shootingDay) {
+      setLocalDate(shootingDay.shoot_date || '')
+      setLocalLocation(shootingDay.base_location || '')
+    }
+  }, [shootingDay])
 
   // 날씨 자동 조회
-  const handleFetchWeather = useCallback(async () => {
-    const date = dateRef.current?.value
-    const location = locationRef.current?.value
+  const handleFetchWeather = useCallback(async (date?: string, location?: string) => {
+    const targetDate = date || localDate
+    const targetLocation = location || localLocation
 
-    if (!date || !location) {
+    if (!targetDate || !targetLocation) {
       alert('촬영일시와 촬영장소를 모두 입력해주세요.')
       return
     }
 
     setIsLoadingWeather(true)
     try {
-      const weatherInfo = await fetchWeatherInfo(date, location)
+      const weatherInfo = await fetchWeatherInfo(targetDate, targetLocation)
       if (weatherInfo) {
         updateShootingDay({
           weather: weatherInfo.weather,
@@ -78,7 +87,18 @@ export default function ShootingDayPage() {
     } finally {
       setIsLoadingWeather(false)
     }
-  }, [updateShootingDay])
+  }, [localDate, localLocation, updateShootingDay])
+
+  // 주소 선택 시 처리
+  const handleAddressSelect = useCallback((address: string) => {
+    setLocalLocation(address)
+    updateShootingDay({ base_location: address })
+
+    // 날짜가 있으면 자동으로 날씨 조회
+    if (localDate && address) {
+      handleFetchWeather(localDate, address)
+    }
+  }, [localDate, handleFetchWeather, updateShootingDay])
 
   // Debounced update for header fields
   const debouncedUpdateHeader = useMemo(
@@ -195,10 +215,12 @@ export default function ShootingDayPage() {
                   <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">촬영일시</td>
                   <td className="px-3 py-2 w-40">
                     <Input
-                      ref={dateRef}
                       type="date"
-                      defaultValue={shootingDay.shoot_date}
-                      onChange={(e) => debouncedUpdateHeader('shoot_date', e.target.value)}
+                      value={localDate}
+                      onChange={(e) => {
+                        setLocalDate(e.target.value)
+                        debouncedUpdateHeader('shoot_date', e.target.value)
+                      }}
                       className="h-8 text-sm"
                     />
                   </td>
@@ -236,20 +258,18 @@ export default function ShootingDayPage() {
                 <tr className="border-b border-border/50">
                   <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap" rowSpan={2}>촬영장소</td>
                   <td className="px-3 py-2" rowSpan={2} colSpan={1}>
-                    <div className="flex gap-2">
-                      <Input
-                        ref={locationRef}
-                        type="text"
-                        placeholder="서울 동작구 동작대로 29길 119"
-                        defaultValue={shootingDay.base_location || ''}
-                        onChange={(e) => debouncedUpdateHeader('base_location', e.target.value)}
-                        className="h-8 text-sm flex-1"
+                    <div className="flex gap-2 items-center">
+                      <AddressInput
+                        value={localLocation}
+                        onChange={handleAddressSelect}
+                        placeholder="주소 검색 클릭"
+                        className="flex-1"
                       />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleFetchWeather}
+                        onClick={() => handleFetchWeather()}
                         disabled={isLoadingWeather}
                         className="h-8 whitespace-nowrap"
                       >
@@ -258,7 +278,7 @@ export default function ShootingDayPage() {
                         ) : (
                           <>
                             <CloudSun className="h-4 w-4 mr-1" />
-                            날씨 조회
+                            날씨
                           </>
                         )}
                       </Button>
