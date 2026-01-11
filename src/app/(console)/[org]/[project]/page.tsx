@@ -26,12 +26,12 @@ export default function ProjectPage() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">{project}</h1>
-            <p className="text-sm text-muted-foreground">Project Overview</p>
+            <p className="text-sm text-muted-foreground">프로젝트 개요</p>
           </div>
           <Button asChild>
             <Link href={`/${org}/${project}/shooting-days`}>
               <Plus className="mr-2 h-4 w-4" />
-              New Shooting Day
+              새 촬영일 추가
             </Link>
           </Button>
         </div>
@@ -40,34 +40,34 @@ export default function ProjectPage() {
         <div className="mb-8 grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Shooting Days</CardTitle>
+              <CardTitle className="text-sm font-medium">촬영일</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.shootingDays}</div>
-              <p className="text-xs text-muted-foreground">Total scheduled</p>
+              <p className="text-xs text-muted-foreground">전체 일정</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Scenes</CardTitle>
+              <CardTitle className="text-sm font-medium">씬</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.scenes}</div>
-              <p className="text-xs text-muted-foreground">In registry</p>
+              <p className="text-xs text-muted-foreground">등록됨</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
+              <CardTitle className="text-sm font-medium">예정</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.upcomingDays}</div>
-              <p className="text-xs text-muted-foreground">Days this week</p>
+              <p className="text-xs text-muted-foreground">이번 주</p>
             </CardContent>
           </Card>
         </div>
@@ -75,8 +75,8 @@ export default function ProjectPage() {
         {/* Recent Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Shooting Days</CardTitle>
-            <CardDescription>Your latest shooting day schedules</CardDescription>
+            <CardTitle>최근 촬영일</CardTitle>
+            <CardDescription>최근 촬영 일정</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -92,14 +92,14 @@ export default function ProjectPage() {
                       #{day}
                     </div>
                     <div>
-                      <p className="font-medium">Day {day}</p>
+                      <p className="font-medium">{day}회차</p>
                       <p className="text-sm text-muted-foreground">
-                        Click to view shooting days
+                        촬영일 보기
                       </p>
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Draft
+                    초안
                   </div>
                 </Link>
               ))}
