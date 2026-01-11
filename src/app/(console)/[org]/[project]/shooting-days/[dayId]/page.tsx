@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { AppShell } from '@/components/layout'
 import { ShotPlanTable, type ShotPlanItem } from '@/components/shooting-day'
@@ -17,10 +17,12 @@ import {
   Sun,
   Sunset,
   Loader2,
+  CloudSun,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useShootingDay } from '@/lib/hooks/use-shooting-day'
 import { debounce } from '@/lib/utils/debounce'
+import { fetchWeatherInfo } from '@/lib/utils/weather'
 
 export default function ShootingDayPage() {
   const params = useParams()
@@ -39,6 +41,44 @@ export default function ShootingDayPage() {
     deleteItem,
     publish,
   } = useShootingDay(dayId)
+
+  // 날씨 조회 상태
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+
+  // 날씨 자동 조회
+  const handleFetchWeather = useCallback(async () => {
+    const date = dateRef.current?.value
+    const location = locationRef.current?.value
+
+    if (!date || !location) {
+      alert('촬영일시와 촬영장소를 모두 입력해주세요.')
+      return
+    }
+
+    setIsLoadingWeather(true)
+    try {
+      const weatherInfo = await fetchWeatherInfo(date, location)
+      if (weatherInfo) {
+        updateShootingDay({
+          weather: weatherInfo.weather,
+          precipitation: weatherInfo.precipitation,
+          temp_low: weatherInfo.tempLow,
+          temp_high: weatherInfo.tempHigh,
+          sunrise: weatherInfo.sunrise,
+          sunset: weatherInfo.sunset,
+        })
+      } else {
+        alert('날씨 정보를 가져올 수 없습니다. 주소를 확인해주세요.')
+      }
+    } catch (err) {
+      console.error('Weather fetch error:', err)
+      alert('날씨 정보 조회 중 오류가 발생했습니다.')
+    } finally {
+      setIsLoadingWeather(false)
+    }
+  }, [updateShootingDay])
 
   // Debounced update for header fields
   const debouncedUpdateHeader = useMemo(
@@ -155,6 +195,7 @@ export default function ShootingDayPage() {
                   <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap w-24">촬영일시</td>
                   <td className="px-3 py-2 w-40">
                     <Input
+                      ref={dateRef}
                       type="date"
                       defaultValue={shootingDay.shoot_date}
                       onChange={(e) => debouncedUpdateHeader('shoot_date', e.target.value)}
@@ -195,13 +236,33 @@ export default function ShootingDayPage() {
                 <tr className="border-b border-border/50">
                   <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap" rowSpan={2}>촬영장소</td>
                   <td className="px-3 py-2" rowSpan={2} colSpan={1}>
-                    <Input
-                      type="text"
-                      placeholder="서울 동작구 동작대로 29길 119"
-                      defaultValue={shootingDay.base_location || ''}
-                      onChange={(e) => debouncedUpdateHeader('base_location', e.target.value)}
-                      className="h-8 text-sm"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        ref={locationRef}
+                        type="text"
+                        placeholder="서울 동작구 동작대로 29길 119"
+                        defaultValue={shootingDay.base_location || ''}
+                        onChange={(e) => debouncedUpdateHeader('base_location', e.target.value)}
+                        className="h-8 text-sm flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleFetchWeather}
+                        disabled={isLoadingWeather}
+                        className="h-8 whitespace-nowrap"
+                      >
+                        {isLoadingWeather ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <CloudSun className="h-4 w-4 mr-1" />
+                            날씨 조회
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </td>
                   <td className="bg-secondary/50 px-3 py-2 font-medium text-muted-foreground whitespace-nowrap" rowSpan={2}>집합장소</td>
                   <td className="px-3 py-2" rowSpan={2}>
