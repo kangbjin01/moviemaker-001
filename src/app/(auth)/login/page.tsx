@@ -40,24 +40,36 @@ export default function LoginPage() {
         if (user) {
           const { data: membership } = await supabase
             .from('organization_members')
-            .select('organization_id, organizations(slug)')
+            .select('organization_id')
             .eq('user_id', user.id)
             .limit(1)
             .single()
 
           if (membership) {
-            const orgSlug = (membership.organizations as any)?.slug
-            const { data: project } = await supabase
-              .from('projects')
+            // Get organization slug
+            const { data: org } = await supabase
+              .from('organizations')
               .select('slug')
-              .eq('organization_id', membership.organization_id)
-              .limit(1)
+              .eq('id', membership.organization_id)
               .single()
 
-            if (project) {
-              router.push(`/${orgSlug}/${project.slug}`)
+            const orgSlug = org?.slug
+
+            if (orgSlug) {
+              const { data: project } = await supabase
+                .from('projects')
+                .select('slug')
+                .eq('organization_id', membership.organization_id)
+                .limit(1)
+                .single()
+
+              if (project) {
+                router.push(`/${orgSlug}/${project.slug}`)
+              } else {
+                router.push(`/${orgSlug}`)
+              }
             } else {
-              router.push(`/${orgSlug}`)
+              router.push('/onboarding')
             }
           } else {
             router.push('/onboarding')
