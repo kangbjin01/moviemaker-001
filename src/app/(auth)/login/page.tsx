@@ -93,19 +93,19 @@ export default function LoginPage() {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
           <Film className="h-6 w-6 text-primary-foreground" />
         </div>
-        <CardTitle>{isLogin ? 'Welcome back' : 'Create account'}</CardTitle>
+        <CardTitle>{isLogin ? '다시 오신 것을 환영합니다' : '계정 만들기'}</CardTitle>
         <CardDescription>
-          {isLogin ? 'Sign in to your account' : 'Sign up to get started'}
+          {isLogin ? '계정에 로그인하세요' : '시작하려면 가입하세요'}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
+              <label className="text-sm font-medium">이름</label>
               <Input
                 type="text"
-                placeholder="Your name"
+                placeholder="이름을 입력하세요"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required={!isLogin}
@@ -114,10 +114,10 @@ export default function LoginPage() {
             </div>
           )}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-medium">이메일</label>
             <Input
               type="email"
-              placeholder="you@example.com"
+              placeholder="example@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -125,7 +125,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Password</label>
+            <label className="text-sm font-medium">비밀번호</label>
             <Input
               type="password"
               placeholder="••••••••"
@@ -143,7 +143,7 @@ export default function LoginPage() {
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {isLogin ? 'Sign In' : 'Sign Up'}
+            {isLogin ? '로그인' : '가입하기'}
           </Button>
         </form>
 
@@ -156,13 +156,13 @@ export default function LoginPage() {
             }}
             className="text-sm text-muted-foreground hover:underline"
           >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? '계정이 없으신가요? 가입하기' : '이미 계정이 있으신가요? 로그인'}
           </button>
         </div>
 
         <div className="mt-2 text-center">
           <Link href="/" className="text-sm text-muted-foreground hover:underline">
-            Back to home
+            홈으로 돌아가기
           </Link>
         </div>
       </CardContent>

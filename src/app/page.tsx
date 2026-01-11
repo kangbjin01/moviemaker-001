@@ -10,7 +10,7 @@ export default function HomePage() {
             Film Production OS
           </h1>
           <p className="text-secondary-foreground text-sm">
-            Modern film production management
+            현대적인 영상 제작 관리 시스템
           </p>
         </div>
 
@@ -20,30 +20,30 @@ export default function HomePage() {
             href="/login"
             className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Get Started
+            시작하기
           </Link>
           <p className="text-xs text-muted-foreground">
-            Plan, collaborate, and execute your productions
+            제작을 계획하고, 협업하고, 실행하세요
           </p>
         </div>
 
         {/* Features */}
         <div className="grid grid-cols-2 gap-4 pt-8 text-left">
           <FeatureCard
-            title="Shot Planning"
-            description="Build shooting schedules faster than Excel"
+            title="촬영 계획"
+            description="엑셀보다 빠르게 촬영 일정을 작성하세요"
           />
           <FeatureCard
-            title="Real-time Sync"
-            description="Collaborate with your team instantly"
+            title="실시간 동기화"
+            description="팀과 즉시 협업하세요"
           />
           <FeatureCard
-            title="Auto Export"
-            description="Generate PDF & Excel with one click"
+            title="자동 내보내기"
+            description="클릭 한 번으로 PDF & Excel 생성"
           />
           <FeatureCard
-            title="Version Control"
-            description="Track changes with diff view"
+            title="버전 관리"
+            description="변경 사항을 추적하고 비교하세요"
           />
         </div>
       </div>

@@ -107,13 +107,16 @@ function getKoreanCityCoords(address: string): GeocodingResult | null {
 
 // 주소를 좌표로 변환
 async function geocodeAddress(address: string): Promise<GeocodingResult | null> {
+  console.log('[Weather] Geocoding address:', address)
+
   // 1. 한국 도시/구 매핑으로 먼저 시도
   const koreanCoords = getKoreanCityCoords(address)
   if (koreanCoords) {
-    console.log('Using Korean city mapping for:', address)
+    console.log('[Weather] Found Korean city mapping:', koreanCoords)
     return koreanCoords
   }
 
+  console.log('[Weather] No Korean mapping found, trying Nominatim...')
   // 2. Nominatim fallback
   return geocodeAddressFallback(address)
 }
@@ -195,38 +198,45 @@ export async function fetchWeatherInfo(
   date: string, // YYYY-MM-DD
   address: string
 ): Promise<WeatherInfo | null> {
+  console.log('[Weather] fetchWeatherInfo called with:', { date, address })
+
   try {
     // 1. 주소를 좌표로 변환
     const coords = await geocodeAddress(address)
     if (!coords) {
-      console.error('Failed to geocode address:', address)
+      console.error('[Weather] Failed to geocode address:', address)
       return null
     }
 
+    console.log('[Weather] Coords found:', coords)
+
     // 2. Open-Meteo API로 날씨 조회
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?` +
-        `latitude=${coords.lat}&longitude=${coords.lon}` +
-        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
-        `&timezone=Asia/Seoul` +
-        `&start_date=${date}&end_date=${date}`
-    )
+    const apiUrl = `https://api.open-meteo.com/v1/forecast?` +
+      `latitude=${coords.lat}&longitude=${coords.lon}` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
+      `&timezone=Asia/Seoul` +
+      `&start_date=${date}&end_date=${date}`
+
+    console.log('[Weather] Fetching from:', apiUrl)
+
+    const response = await fetch(apiUrl)
 
     if (!response.ok) {
-      console.error('Weather API error:', response.status)
+      console.error('[Weather] API error:', response.status)
       return null
     }
 
     const data = await response.json()
+    console.log('[Weather] API response:', data)
 
     if (!data.daily || data.daily.time.length === 0) {
-      console.error('No weather data for date:', date)
+      console.error('[Weather] No weather data for date:', date)
       return null
     }
 
     const daily = data.daily
 
-    return {
+    const result = {
       weather: getWeatherDescription(daily.weather_code[0]),
       precipitation: `${daily.precipitation_probability_max[0] || 0}%`,
       tempLow: `${Math.round(daily.temperature_2m_min[0])}`,
@@ -234,8 +244,11 @@ export async function fetchWeatherInfo(
       sunrise: formatTime(daily.sunrise[0]),
       sunset: formatTime(daily.sunset[0]),
     }
+
+    console.log('[Weather] Result:', result)
+    return result
   } catch (error) {
-    console.error('Weather fetch error:', error)
+    console.error('[Weather] Fetch error:', error)
     return null
   }
 }

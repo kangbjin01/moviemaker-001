@@ -24,29 +24,19 @@ export function Sidebar({ org, project }: SidebarProps) {
 
   const navigation = [
     {
-      name: 'Home',
+      name: '대시보드',
       href: org && project ? `/${org}/${project}` : '/',
       icon: Home,
     },
     {
-      name: 'Shooting Days',
-      href: org && project ? `/${org}/${project}/shooting-days` : '#',
-      icon: Calendar,
-    },
-    {
-      name: 'Scenes',
-      href: org && project ? `/${org}/${project}/scenes` : '#',
-      icon: FileText,
-    },
-    {
-      name: 'People',
+      name: '피플',
       href: org && project ? `/${org}/${project}/people` : '#',
       icon: Users,
     },
     {
-      name: 'Locations',
-      href: org && project ? `/${org}/${project}/locations` : '#',
-      icon: MapPin,
+      name: '일일촬영계획표',
+      href: org && project ? `/${org}/${project}/shooting-days` : '#',
+      icon: Calendar,
     },
   ]
 
@@ -94,7 +84,7 @@ export function Sidebar({ org, project }: SidebarProps) {
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <Settings className="h-4 w-4" />
-          Settings
+          설정
         </Link>
       </div>
     </aside>

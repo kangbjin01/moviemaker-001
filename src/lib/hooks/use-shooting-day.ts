@@ -13,9 +13,15 @@ export interface ShootingDay {
   shooting_time_start: string | null
   shooting_time_end: string | null
   base_location_id: string | null
-  weather: string | null
-  sunrise: string | null
-  sunset: string | null
+  base_location: string | null // 촬영장소 (텍스트)
+  assembly_location: string | null // 집합장소
+  weather: string | null // 일기예보
+  precipitation: string | null // 강수확률
+  temp_low: string | null // 최저온도
+  temp_high: string | null // 최고온도
+  sunrise: string | null // 일출시간
+  sunset: string | null // 일몰시간
+  notes: string | null // 기타사항
   status: 'draft' | 'published'
   version: number
 }

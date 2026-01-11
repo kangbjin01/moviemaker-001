@@ -44,6 +44,7 @@ interface ShotPlanTableProps {
   onChange: (items: ShotPlanItem[]) => void
   onAddRow: () => void
   onDeleteRow: (id: string) => void
+  availableCast?: Array<{ id: string; name: string }>
 }
 
 const SCENE_TIME_OPTIONS = [
@@ -115,6 +116,115 @@ function EditableCell({
         className
       )}
     />
+  )
+}
+
+// Combobox for Cast (Dropdown + Direct Input)
+function CastCombobox({
+  value,
+  onChange,
+  availableCast = [],
+}: {
+  value: string
+  onChange: (value: string) => void
+  availableCast: Array<{ id: string; name: string }>
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [localValue, setLocalValue] = useState(value)
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const inputRef = useRef<HTMLInputElement>(null)
+  const prevValueRef = useRef(value)
+
+  // 외부에서 value가 변경되면 로컬 값도 업데이트
+  if (prevValueRef.current !== value && value !== localValue) {
+    setLocalValue(value)
+    prevValueRef.current = value
+  }
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      })
+    }
+  }, [isOpen])
+
+  const handleBlur = () => {
+    // 드롭다운 클릭 시 blur가 먼저 발생하므로 약간 지연
+    setTimeout(() => {
+      if (localValue !== value) {
+        onChange(localValue)
+      }
+      setIsOpen(false)
+    }, 200)
+  }
+
+  const handleSelect = (name: string) => {
+    const currentNames = localValue.split(',').map(s => s.trim()).filter(Boolean)
+    if (!currentNames.includes(name)) {
+      const newValue = [...currentNames, name].join(', ')
+      setLocalValue(newValue)
+      onChange(newValue)
+    }
+    setIsOpen(false)
+  }
+
+  // 필터링: 입력값이 비어있으면 모든 캐스트 표시, 아니면 필터링
+  const searchValue = localValue.split(',').pop()?.trim().toLowerCase() || ''
+  const filteredCast = availableCast.filter(cast =>
+    cast.name.toLowerCase().includes(searchValue)
+  )
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onFocus={() => setIsOpen(true)}
+        onBlur={handleBlur}
+        placeholder="출연진 선택 또는 입력"
+        className="w-full rounded border-0 bg-transparent px-2 py-1 text-sm focus:bg-secondary focus:outline-none focus:ring-1 focus:ring-border"
+      />
+
+      {isOpen && availableCast.length > 0 && typeof document !== 'undefined' && createPortal(
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            className="fixed z-50 max-h-[200px] overflow-y-auto rounded-lg border border-border bg-background shadow-lg"
+            style={{ top: position.top, left: position.left, width: position.width }}
+          >
+            {filteredCast.length > 0 ? (
+              filteredCast.map((cast) => (
+                <button
+                  key={cast.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    handleSelect(cast.name)
+                  }}
+                  className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-secondary"
+                >
+                  {cast.name}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                캐스트를 찾을 수 없습니다
+              </div>
+            )}
+          </div>
+        </>,
+        document.body
+      )}
+    </div>
   )
 }
 
@@ -205,10 +315,12 @@ function SortableRow({
   item,
   onUpdate,
   onDelete,
+  availableCast = [],
 }: {
   item: ShotPlanItem
   onUpdate: (id: string, field: keyof ShotPlanItem, value: unknown) => void
   onDelete: (id: string) => void
+  availableCast?: Array<{ id: string; name: string }>
 }) {
   const {
     attributes,
@@ -328,10 +440,10 @@ function SortableRow({
 
       {/* 주요인물 */}
       <td className="w-[150px] px-2 py-2">
-        <EditableCell
+        <CastCombobox
           value={item.cast_ids.join(', ')}
           onChange={(v) => onUpdate(item.id, 'cast_ids', v.split(',').map(s => s.trim()).filter(Boolean))}
-          placeholder="출연진"
+          availableCast={availableCast}
         />
       </td>
 
@@ -362,6 +474,7 @@ export function ShotPlanTable({
   onChange,
   onAddRow,
   onDeleteRow,
+  availableCast = [],
 }: ShotPlanTableProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -369,6 +482,19 @@ export function ShotPlanTable({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
+
+  // Ctrl+Enter로 새 행 추가
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault()
+        onAddRow()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onAddRow])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -470,6 +596,7 @@ export function ShotPlanTable({
                     item={item}
                     onUpdate={handleUpdateItem}
                     onDelete={onDeleteRow}
+                    availableCast={availableCast}
                   />
                 ))}
               </SortableContext>
@@ -486,7 +613,20 @@ export function ShotPlanTable({
             </Button>
           </div>
         )}
+
+        {items.length > 0 && (
+          <button
+            onClick={onAddRow}
+            className="flex w-full items-center justify-center gap-2 border-t border-border bg-secondary/30 py-4 text-sm text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            <span>행 추가 (Ctrl+Enter)</span>
+          </button>
+        )}
       </div>
+
+      {/* 하단 여유 공간 (드롭다운이 잘리지 않도록) */}
+      <div className="h-64" />
     </div>
   )
 }

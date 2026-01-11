@@ -112,14 +112,14 @@ export default function ShootingDaysPage() {
   }
 
   return (
-    <AppShell org={org} project={project} title="Shooting Days">
+    <AppShell org={org} project={project} title="일일촬영계획표">
       <div className="p-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Shooting Days</h1>
+            <h1 className="text-2xl font-semibold">일일촬영계획표</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your daily shooting schedules
+              촬영 회차별 계획표를 관리합니다
             </p>
           </div>
           <Button onClick={handleCreateDay} disabled={isCreating}>
@@ -128,7 +128,7 @@ export default function ShootingDaysPage() {
             ) : (
               <Plus className="mr-2 h-4 w-4" />
             )}
-            New Day
+            새 회차 추가
           </Button>
         </div>
 
@@ -150,9 +150,9 @@ export default function ShootingDaysPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">Day {day.day_number || '-'}</span>
+                      <span className="font-semibold">{day.day_number || '-'}회차</span>
                       <Badge variant={day.status === 'published' ? 'default' : 'secondary'}>
-                        {day.status}
+                        {day.status === 'published' ? '저장됨' : '작성중'}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -161,8 +161,8 @@ export default function ShootingDaysPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium">{day.shot_count} shots</p>
-                  <p className="text-sm text-muted-foreground">planned</p>
+                  <p className="font-medium">{day.shot_count}컷</p>
+                  <p className="text-sm text-muted-foreground">계획됨</p>
                 </div>
               </Link>
             ))}
@@ -170,9 +170,9 @@ export default function ShootingDaysPage() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12">
             <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 font-semibold">No shooting days yet</h3>
+            <h3 className="mb-2 font-semibold">아직 촬영 계획이 없습니다</h3>
             <p className="mb-4 text-sm text-muted-foreground">
-              Create your first shooting day schedule
+              첫 번째 촬영 계획표를 만들어보세요
             </p>
             <Button onClick={handleCreateDay} disabled={isCreating}>
               {isCreating ? (
@@ -180,7 +180,7 @@ export default function ShootingDaysPage() {
               ) : (
                 <Plus className="mr-2 h-4 w-4" />
               )}
-              Create Shooting Day
+              첫 회차 만들기
             </Button>
           </div>
         )}
