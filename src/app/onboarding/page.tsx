@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Film, Loader2, ArrowRight } from 'lucide-react'
+import { Film, Loader2, ArrowRight, SkipForward } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function OnboardingPage() {
@@ -16,6 +16,7 @@ export default function OnboardingPage() {
 
   // Organization data
   const [orgName, setOrgName] = useState('')
+  const [orgSlug, setOrgSlug] = useState('')
 
   // Project data
   const [projectName, setProjectName] = useState('')
@@ -27,8 +28,23 @@ export default function OnboardingPage() {
       .replace(/(^-|-$)/g, '')
   }
 
+  // Organization 이름 입력 핸들러 (영어, 숫자, 공백, 하이픈만 허용)
+  const handleOrgNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // 영어, 숫자, 공백, 하이픈만 허용
+    const filtered = value.replace(/[^a-zA-Z0-9\s\-]/g, '')
+    setOrgName(filtered)
+    setOrgSlug(createSlug(filtered))
+  }
+
   const handleCreateOrg = async () => {
     if (!orgName.trim()) return
+
+    // 영어로만 구성되어 있는지 확인
+    if (!/^[a-zA-Z0-9\s\-]+$/.test(orgName)) {
+      setError('Organization 이름은 영어, 숫자, 공백, 하이픈만 사용할 수 있습니다')
+      return
+    }
 
     setIsLoading(true)
     setError(null)
@@ -37,7 +53,7 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      setError('Not authenticated')
+      setError('로그인이 필요합니다')
       setIsLoading(false)
       return
     }
@@ -56,7 +72,11 @@ export default function OnboardingPage() {
       .single<{ id: string; name: string; slug: string }>())
 
     if (orgError) {
-      setError(orgError.message)
+      if (orgError.message.includes('duplicate')) {
+        setError('이미 존재하는 Organization 이름입니다')
+      } else {
+        setError(orgError.message)
+      }
       setIsLoading(false)
       return
     }
@@ -70,6 +90,7 @@ export default function OnboardingPage() {
         role: 'owner',
       }] as any)
 
+    setOrgSlug(org.slug)
     setIsLoading(false)
     setStep(2)
   }
@@ -84,7 +105,7 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      setError('Not authenticated')
+      setError('로그인이 필요합니다')
       setIsLoading(false)
       return
     }
@@ -97,7 +118,7 @@ export default function OnboardingPage() {
       .single<{ organization_id: string }>()
 
     if (!membership) {
-      setError('Organization not found')
+      setError('Organization을 찾을 수 없습니다')
       setIsLoading(false)
       return
     }
@@ -110,7 +131,7 @@ export default function OnboardingPage() {
       .single<{ slug: string }>()
 
     if (!org) {
-      setError('Organization not found')
+      setError('Organization을 찾을 수 없습니다')
       setIsLoading(false)
       return
     }
@@ -128,13 +149,52 @@ export default function OnboardingPage() {
       }] as any)
 
     if (projectError) {
-      setError(projectError.message)
+      if (projectError.message.includes('duplicate')) {
+        setError('이미 존재하는 프로젝트 이름입니다')
+      } else {
+        setError(projectError.message)
+      }
       setIsLoading(false)
       return
     }
 
     // Redirect to project
     router.push(`/${org.slug}/${projectSlug}`)
+  }
+
+  const handleSkipProject = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Get user's organization
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single<{ organization_id: string }>()
+
+    if (!membership) {
+      router.push('/login')
+      return
+    }
+
+    // Get organization slug
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('slug')
+      .eq('id', membership.organization_id)
+      .single<{ slug: string }>()
+
+    if (org) {
+      router.push(`/${org.slug}`)
+    } else {
+      router.push('/login')
+    }
   }
 
   return (
@@ -145,25 +205,28 @@ export default function OnboardingPage() {
             <Film className="h-6 w-6 text-primary-foreground" />
           </div>
           <CardTitle>
-            {step === 1 ? 'Create your workspace' : 'Create your first project'}
+            {step === 1 ? '워크스페이스 만들기' : '첫 번째 프로젝트 만들기'}
           </CardTitle>
           <CardDescription>
             {step === 1
-              ? 'Start by creating an organization for your team'
-              : 'Now let\'s create your first film project'}
+              ? '팀을 위한 Organization을 만들어 시작하세요'
+              : '첫 번째 영화 프로젝트를 만들어보세요'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {step === 1 ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Organization name</label>
+                <label className="text-sm font-medium">Organization 이름</label>
                 <Input
                   placeholder="My Production Company"
                   value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
+                  onChange={handleOrgNameChange}
                   disabled={isLoading}
                 />
+                <p className="text-xs text-muted-foreground">
+                  영어, 숫자, 공백, 하이픈만 사용 가능합니다
+                </p>
                 {orgName && (
                   <p className="text-xs text-muted-foreground">
                     URL: /{createSlug(orgName)}
@@ -181,22 +244,22 @@ export default function OnboardingPage() {
                 ) : (
                   <ArrowRight className="mr-2 h-4 w-4" />
                 )}
-                Continue
+                계속하기
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Project name</label>
+                <label className="text-sm font-medium">프로젝트 이름</label>
                 <Input
-                  placeholder="My First Film"
+                  placeholder="나의 첫 번째 영화"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   disabled={isLoading}
                 />
                 {projectName && (
                   <p className="text-xs text-muted-foreground">
-                    URL: /{createSlug(orgName)}/{createSlug(projectName)}
+                    URL: /{orgSlug}/{createSlug(projectName)}
                   </p>
                 )}
               </div>
@@ -211,7 +274,16 @@ export default function OnboardingPage() {
                 ) : (
                   <ArrowRight className="mr-2 h-4 w-4" />
                 )}
-                Create Project
+                프로젝트 만들기
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={handleSkipProject}
+                disabled={isLoading}
+              >
+                <SkipForward className="mr-2 h-4 w-4" />
+                나중에 만들기
               </Button>
             </div>
           )}
