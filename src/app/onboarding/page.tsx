@@ -45,15 +45,15 @@ export default function OnboardingPage() {
     const slug = createSlug(orgName)
 
     // Create organization
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await (supabase
       .from('organizations')
-      .insert({
+      .insert([{
         name: orgName,
         slug,
         owner_id: user.id,
-      })
+      }] as any)
       .select()
-      .single()
+      .single<{ id: string; name: string; slug: string }>())
 
     if (orgError) {
       setError(orgError.message)
@@ -64,11 +64,11 @@ export default function OnboardingPage() {
     // Add user as owner member
     await supabase
       .from('organization_members')
-      .insert({
+      .insert([{
         organization_id: org.id,
         user_id: user.id,
         role: 'owner',
-      })
+      }] as any)
 
     setIsLoading(false)
     setStep(2)
@@ -92,11 +92,24 @@ export default function OnboardingPage() {
     // Get user's organization
     const { data: membership } = await supabase
       .from('organization_members')
-      .select('organization_id, organizations(slug)')
+      .select('organization_id')
       .eq('user_id', user.id)
-      .single()
+      .single<{ organization_id: string }>()
 
     if (!membership) {
+      setError('Organization not found')
+      setIsLoading(false)
+      return
+    }
+
+    // Get organization slug
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('slug')
+      .eq('id', membership.organization_id)
+      .single<{ slug: string }>()
+
+    if (!org) {
       setError('Organization not found')
       setIsLoading(false)
       return
@@ -107,12 +120,12 @@ export default function OnboardingPage() {
     // Create project
     const { error: projectError } = await supabase
       .from('projects')
-      .insert({
+      .insert([{
         organization_id: membership.organization_id,
         name: projectName,
         slug: projectSlug,
         created_by: user.id,
-      })
+      }] as any)
 
     if (projectError) {
       setError(projectError.message)
@@ -121,8 +134,7 @@ export default function OnboardingPage() {
     }
 
     // Redirect to project
-    const orgSlug = (membership.organizations as any)?.slug
-    router.push(`/${orgSlug}/${projectSlug}`)
+    router.push(`/${org.slug}/${projectSlug}`)
   }
 
   return (

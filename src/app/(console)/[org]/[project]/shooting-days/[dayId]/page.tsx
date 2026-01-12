@@ -87,7 +87,7 @@ export default function ShootingDayPage() {
         .from('projects')
         .select('id, name')
         .eq('slug', project)
-        .single()
+        .single<{ id: string; name: string }>()
       if (data) {
         setProjectId(data.id)
         setProjectName(data.name)

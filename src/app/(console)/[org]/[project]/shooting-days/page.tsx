@@ -36,9 +36,9 @@ export default function ShootingDaysPage() {
         .from('projects')
         .select('id')
         .eq('slug', project)
-        .single()
+        .single<{ id: string }>()
 
-      if (!projectData) {
+      if (!projectData?.id) {
         setIsLoading(false)
         return
       }
@@ -57,6 +57,7 @@ export default function ShootingDaysPage() {
         .eq('project_id', projectData.id)
         .is('deleted_at', null)
         .order('shoot_date', { ascending: true })
+        .returns<Array<{ id: string; day_number: number; shoot_date: string; status: string }>>()
 
       // Get shot counts for each day
       const daysWithCounts = await Promise.all(
@@ -91,21 +92,21 @@ export default function ShootingDaysPage() {
     // Create new shooting day with today's date
     const today = new Date().toISOString().split('T')[0]
 
-    const { data: newDay, error } = await supabase
+    const { data: newDay, error } = await (supabase
       .from('shooting_days')
-      .insert({
+      .insert([{
         project_id: projectId,
         day_number: nextDayNumber,
         shoot_date: today,
         status: 'draft',
         created_by: user?.id,
-      })
+      }] as any)
       .select()
-      .single()
+      .single<{ id: string }>())
 
     setIsCreating(false)
 
-    if (newDay) {
+    if (newDay?.id) {
       // Navigate to new day
       window.location.href = `/${org}/${project}/shooting-days/${newDay.id}`
     }

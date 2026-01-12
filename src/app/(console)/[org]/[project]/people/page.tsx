@@ -158,9 +158,9 @@ export default function PeoplePage() {
         .from('projects')
         .select('id')
         .eq('slug', project)
-        .single()
+        .single<{ id: string }>()
 
-      if (data) {
+      if (data?.id) {
         setProjectId(data.id)
       }
       setIsLoadingProject(false)

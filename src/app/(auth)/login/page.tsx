@@ -43,15 +43,15 @@ export default function LoginPage() {
             .select('organization_id')
             .eq('user_id', user.id)
             .limit(1)
-            .single()
+            .single<{ organization_id: string }>()
 
-          if (membership) {
+          if (membership?.organization_id) {
             // Get organization slug
             const { data: org } = await supabase
               .from('organizations')
               .select('slug')
               .eq('id', membership.organization_id)
-              .single()
+              .single<{ slug: string }>()
 
             const orgSlug = org?.slug
 
@@ -61,9 +61,9 @@ export default function LoginPage() {
                 .select('slug')
                 .eq('organization_id', membership.organization_id)
                 .limit(1)
-                .single()
+                .single<{ slug: string }>()
 
-              if (project) {
+              if (project?.slug) {
                 router.push(`/${orgSlug}/${project.slug}`)
               } else {
                 router.push(`/${orgSlug}`)
