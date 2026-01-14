@@ -12,6 +12,7 @@ import {
   Settings,
   Home,
   ChevronDown,
+  FolderOpen,
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -37,6 +38,11 @@ export function Sidebar({ org, project }: SidebarProps) {
       name: '일일촬영계획표',
       href: org && project ? `/${org}/${project}/shooting-days` : '#',
       icon: Calendar,
+    },
+    {
+      name: '파일',
+      href: org && project ? `/${org}/${project}/files` : '#',
+      icon: FolderOpen,
     },
   ]
 
