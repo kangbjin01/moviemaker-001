@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { r2Client, R2_BUCKET } from '@/lib/r2/client'
+import { getR2Client, R2_BUCKET } from '@/lib/r2/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       Key: storagePath,
     })
 
-    const signedUrl = await getSignedUrl(r2Client, command, { expiresIn })
+    const signedUrl = await getSignedUrl(getR2Client(), command, { expiresIn })
 
     return NextResponse.json({ signedUrl })
   } catch (error) {

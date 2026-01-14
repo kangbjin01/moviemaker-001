@@ -2,11 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// 서버사이드 Supabase 클라이언트 (service role)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// 서버사이드 Supabase 클라이언트 (service role) - lazy initialization
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function GET(
   request: NextRequest,
@@ -19,6 +21,8 @@ export async function GET(
   }
 
   try {
+    const supabase = getSupabaseClient()
+
     // 공유된 프로젝트 정보 조회
     const { data: project, error: projectError } = await supabase
       .rpc('get_shared_project', { p_share_token: token })

@@ -3,13 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { r2Client, R2_BUCKET } from '@/lib/r2/client'
+import { getR2Client, R2_BUCKET } from '@/lib/r2/client'
 
-// 서버사이드 Supabase 클라이언트 (service role)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// 서버사이드 Supabase 클라이언트 (service role) - lazy initialization
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function POST(
   request: NextRequest,
@@ -23,6 +25,8 @@ export async function POST(
   }
 
   try {
+    const supabase = getSupabaseClient()
+
     // 공유 토큰이 유효한지 확인
     const { data: project, error: projectError } = await supabase
       .rpc('get_shared_project', { p_share_token: token })
@@ -51,7 +55,7 @@ export async function POST(
       Key: storagePath,
     })
 
-    const signedUrl = await getSignedUrl(r2Client, command, { expiresIn: 1800 }) // 30분
+    const signedUrl = await getSignedUrl(getR2Client(), command, { expiresIn: 1800 }) // 30분
 
     return NextResponse.json({ signedUrl })
   } catch (err) {
