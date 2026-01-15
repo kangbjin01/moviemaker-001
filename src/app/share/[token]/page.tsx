@@ -257,9 +257,10 @@ export default function SharePage({ params }: { params: { token: string } }) {
 
   // 파일이 뷰어로 볼 수 있는지 확인
   const isViewable = useCallback((file: SharedFile) => {
-    if (!file.mime_type && !file.original_name) return false
-    const mime = file.mime_type || ''
-    const name = file.original_name.toLowerCase()
+    if (!file) return false
+    const mime = (file.mime_type || '').toLowerCase()
+    const name = (file.original_name || '').toLowerCase()
+    if (!mime && !name) return false
     return (
       mime.startsWith('image/') ||
       mime.includes('pdf') ||
@@ -267,9 +268,18 @@ export default function SharePage({ params }: { params: { token: string } }) {
       mime.includes('spreadsheet') ||
       mime.includes('presentation') ||
       mime.includes('officedocument') ||
+      name.endsWith('.pdf') ||
       name.endsWith('.docx') ||
       name.endsWith('.xlsx') ||
-      name.endsWith('.pptx')
+      name.endsWith('.pptx') ||
+      name.endsWith('.doc') ||
+      name.endsWith('.xls') ||
+      name.endsWith('.ppt') ||
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.gif') ||
+      name.endsWith('.webp')
     )
   }, [])
 

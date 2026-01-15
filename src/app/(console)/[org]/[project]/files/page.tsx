@@ -283,9 +283,10 @@ export default function FilesPage() {
 
   // 파일이 뷰어로 볼 수 있는지 확인
   const isViewable = useCallback((file: ProjectFile) => {
-    if (!file.mime_type && !file.original_name) return false
-    const mime = file.mime_type || ''
-    const name = file.original_name.toLowerCase()
+    if (!file) return false
+    const mime = (file.mime_type || '').toLowerCase()
+    const name = (file.original_name || '').toLowerCase()
+    if (!mime && !name) return false
     return (
       mime.startsWith('image/') ||
       mime.includes('pdf') ||
@@ -293,12 +294,18 @@ export default function FilesPage() {
       mime.includes('spreadsheet') ||
       mime.includes('presentation') ||
       mime.includes('officedocument') ||
+      name.endsWith('.pdf') ||
       name.endsWith('.docx') ||
       name.endsWith('.xlsx') ||
       name.endsWith('.pptx') ||
       name.endsWith('.doc') ||
       name.endsWith('.xls') ||
-      name.endsWith('.ppt')
+      name.endsWith('.ppt') ||
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.gif') ||
+      name.endsWith('.webp')
     )
   }, [])
 
