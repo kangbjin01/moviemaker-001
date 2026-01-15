@@ -22,7 +22,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/lib/utils/cn'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { GripVertical, Plus, Trash2, ChevronDown } from 'lucide-react'
+import { GripVertical, Plus, Trash2, ChevronDown, Clock, X, Film, Copy } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 
 export interface ShotPlanItem {
   id: string
@@ -315,12 +316,16 @@ function SortableRow({
   item,
   onUpdate,
   onDelete,
+  onApplyToSameScene,
   availableCast = [],
+  hasSameSceneItems,
 }: {
   item: ShotPlanItem
   onUpdate: (id: string, field: keyof ShotPlanItem, value: unknown) => void
   onDelete: (id: string) => void
+  onApplyToSameScene: (item: ShotPlanItem) => void
   availableCast?: Array<{ id: string; name: string }>
+  hasSameSceneItems: boolean
 }) {
   const {
     attributes,
@@ -457,15 +462,449 @@ function SortableRow({
       </td>
 
       {/* Actions */}
-      <td className="w-[40px] px-2 py-2">
-        <button
-          onClick={() => onDelete(item.id)}
-          className="rounded p-1 opacity-0 hover:bg-secondary group-hover:opacity-100"
-        >
-          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
-        </button>
+      <td className="w-[70px] px-2 py-2">
+        <div className="flex items-center gap-1">
+          {hasSameSceneItems && item.scene_number && (
+            <button
+              onClick={() => onApplyToSameScene(item)}
+              className="rounded p-1 opacity-0 hover:bg-secondary group-hover:opacity-100"
+              title="같은 씬에 적용"
+            >
+              <Copy className="h-4 w-4 text-muted-foreground hover:text-blue-500" />
+            </button>
+          )}
+          <button
+            onClick={() => onDelete(item.id)}
+            className="rounded p-1 opacity-0 hover:bg-secondary group-hover:opacity-100"
+            title="삭제"
+          >
+            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-red-500" />
+          </button>
+        </div>
       </td>
     </tr>
+  )
+}
+
+// Auto-fill time settings interface
+interface AutoFillTimeSettings {
+  mode: 'perCut' | 'byRange' // perCut: 컷당 시간 지정, byRange: 시작/끝 시간으로 자동 분배
+  startTime: string
+  endTime: string // byRange 모드용
+  timePerCut: number // minutes
+  breakTime: number // minutes between cuts
+  mealTime: string // e.g., "12:00"
+  mealDuration: number // minutes
+  includeMealTime: boolean
+}
+
+// Auto-fill time modal component
+function AutoFillTimeModal({
+  isOpen,
+  onClose,
+  onApply,
+  itemCount,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onApply: (settings: AutoFillTimeSettings) => void
+  itemCount: number
+}) {
+  const [settings, setSettings] = useState<AutoFillTimeSettings>({
+    mode: 'perCut',
+    startTime: '09:00',
+    endTime: '18:00',
+    timePerCut: 15,
+    breakTime: 5,
+    mealTime: '12:00',
+    mealDuration: 60,
+    includeMealTime: true,
+  })
+
+  // Calculate estimated end time (for perCut mode)
+  const estimatedEndTime = useMemo(() => {
+    if (!settings.startTime || itemCount === 0) return '-'
+
+    const [startH, startM] = settings.startTime.split(':').map(Number)
+    let totalMinutes = startH * 60 + startM
+
+    const shootingMinutes = settings.timePerCut * itemCount + settings.breakTime * (itemCount - 1)
+    totalMinutes += shootingMinutes
+
+    if (settings.includeMealTime && settings.mealTime) {
+      const [mealH, mealM] = settings.mealTime.split(':').map(Number)
+      const mealStart = mealH * 60 + mealM
+      const shootingStartMinutes = startH * 60 + startM
+
+      if (mealStart >= shootingStartMinutes && mealStart <= totalMinutes) {
+        totalMinutes += settings.mealDuration
+      }
+    }
+
+    const endH = Math.floor(totalMinutes / 60)
+    const endM = totalMinutes % 60
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+  }, [settings, itemCount])
+
+  // Calculate time per cut (for byRange mode)
+  const calculatedTimePerCut = useMemo(() => {
+    if (!settings.startTime || !settings.endTime || itemCount === 0) return 0
+
+    const [startH, startM] = settings.startTime.split(':').map(Number)
+    const [endH, endM] = settings.endTime.split(':').map(Number)
+
+    let totalAvailableMinutes = (endH * 60 + endM) - (startH * 60 + startM)
+
+    // Subtract meal time if included
+    if (settings.includeMealTime) {
+      totalAvailableMinutes -= settings.mealDuration
+    }
+
+    // Subtract break times (itemCount - 1 breaks)
+    totalAvailableMinutes -= settings.breakTime * (itemCount - 1)
+
+    // Divide by item count
+    const timePerCut = Math.floor(totalAvailableMinutes / itemCount)
+    return Math.max(1, timePerCut)
+  }, [settings, itemCount])
+
+  if (!isOpen) return null
+
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/50"
+        onClick={onClose}
+      />
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-background p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">시간 자동 채우기</h3>
+          <button
+            onClick={onClose}
+            className="rounded p-1 hover:bg-secondary"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Mode selector */}
+          <div className="flex rounded-lg border border-border p-1 bg-secondary/30">
+            <button
+              type="button"
+              onClick={() => setSettings(s => ({ ...s, mode: 'perCut' }))}
+              className={cn(
+                'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                settings.mode === 'perCut'
+                  ? 'bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              컷당 시간 지정
+            </button>
+            <button
+              type="button"
+              onClick={() => setSettings(s => ({ ...s, mode: 'byRange' }))}
+              className={cn(
+                'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                settings.mode === 'byRange'
+                  ? 'bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              시작/끝 시간 지정
+            </button>
+          </div>
+
+          {/* Start & End time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="start-time" className="text-sm font-medium">촬영 시작 시간</label>
+              <Input
+                id="start-time"
+                type="time"
+                value={settings.startTime}
+                onChange={(e) => setSettings(s => ({ ...s, startTime: e.target.value }))}
+              />
+            </div>
+            {settings.mode === 'perCut' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">예상 종료 시간</label>
+                <div className="flex h-10 items-center rounded-md border border-input bg-secondary px-3 text-sm">
+                  {estimatedEndTime}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label htmlFor="end-time" className="text-sm font-medium">촬영 종료 시간</label>
+                <Input
+                  id="end-time"
+                  type="time"
+                  value={settings.endTime}
+                  onChange={(e) => setSettings(s => ({ ...s, endTime: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Time per cut & break time */}
+          <div className="grid grid-cols-2 gap-4">
+            {settings.mode === 'perCut' ? (
+              <div className="space-y-2">
+                <label htmlFor="time-per-cut" className="text-sm font-medium">컷당 소요 시간 (분)</label>
+                <Input
+                  id="time-per-cut"
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={settings.timePerCut}
+                  onChange={(e) => setSettings(s => ({ ...s, timePerCut: parseInt(e.target.value) || 15 }))}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">계산된 컷당 시간</label>
+                <div className="flex h-10 items-center rounded-md border border-input bg-secondary px-3 text-sm">
+                  {calculatedTimePerCut}분
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label htmlFor="break-time" className="text-sm font-medium">컷 사이 휴식 (분)</label>
+              <Input
+                id="break-time"
+                type="number"
+                min={0}
+                max={60}
+                value={settings.breakTime}
+                onChange={(e) => setSettings(s => ({ ...s, breakTime: parseInt(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+
+          {/* Meal time toggle */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="include-meal"
+              checked={settings.includeMealTime}
+              onChange={(e) => setSettings(s => ({ ...s, includeMealTime: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <label htmlFor="include-meal" className="text-sm font-medium cursor-pointer">식사 시간 포함</label>
+          </div>
+
+          {/* Meal time settings */}
+          {settings.includeMealTime && (
+            <div className="grid grid-cols-2 gap-4 rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="space-y-2">
+                <label htmlFor="meal-time" className="text-sm font-medium">식사 시작 시간</label>
+                <Input
+                  id="meal-time"
+                  type="time"
+                  value={settings.mealTime}
+                  onChange={(e) => setSettings(s => ({ ...s, mealTime: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="meal-duration" className="text-sm font-medium">식사 시간 (분)</label>
+                <Input
+                  id="meal-duration"
+                  type="number"
+                  min={15}
+                  max={120}
+                  value={settings.mealDuration}
+                  onChange={(e) => setSettings(s => ({ ...s, mealDuration: parseInt(e.target.value) || 60 }))}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-sm text-blue-700 dark:text-blue-300">
+            <p>총 {itemCount}컷의 시간을 자동으로 채웁니다.</p>
+            <p className="text-xs mt-1 text-blue-600 dark:text-blue-400">
+              기존에 입력된 시간은 덮어씌워집니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            취소
+          </Button>
+          <Button onClick={() => {
+            // byRange 모드일 경우 계산된 timePerCut을 사용
+            const finalSettings = settings.mode === 'byRange'
+              ? { ...settings, timePerCut: calculatedTimePerCut }
+              : settings
+            onApply(finalSettings)
+          }}>
+            적용
+          </Button>
+        </div>
+      </div>
+    </>,
+    document.body
+  )
+}
+
+// Scene batch add settings interface
+interface AddSceneSettings {
+  sceneNumber: string
+  cutCount: number
+  sceneTime: 'M' | 'D' | 'E' | 'N' | null
+  locationType: 'I' | 'E' | null
+  location: string
+}
+
+// Scene batch add modal component
+function AddSceneModal({
+  isOpen,
+  onClose,
+  onApply,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onApply: (settings: AddSceneSettings) => void
+}) {
+  const [settings, setSettings] = useState<AddSceneSettings>({
+    sceneNumber: '',
+    cutCount: 1,
+    sceneTime: 'D',
+    locationType: 'I',
+    location: '',
+  })
+
+  if (!isOpen) return null
+
+  return createPortal(
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/50"
+        onClick={onClose}
+      />
+      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-background p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">씬 일괄 추가</h3>
+          <button
+            onClick={onClose}
+            className="rounded p-1 hover:bg-secondary"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Scene number & Cut count */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="scene-number" className="text-sm font-medium">씬 번호 (S#)</label>
+              <Input
+                id="scene-number"
+                type="text"
+                placeholder="예: 3"
+                value={settings.sceneNumber}
+                onChange={(e) => setSettings(s => ({ ...s, sceneNumber: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="cut-count" className="text-sm font-medium">컷 수</label>
+              <Input
+                id="cut-count"
+                type="number"
+                min={1}
+                max={50}
+                value={settings.cutCount}
+                onChange={(e) => setSettings(s => ({ ...s, cutCount: parseInt(e.target.value) || 1 }))}
+              />
+            </div>
+          </div>
+
+          {/* Scene time & Location type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">시간대 (M/D/E/N)</label>
+              <div className="flex gap-1">
+                {SCENE_TIME_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSettings(s => ({ ...s, sceneTime: opt.value as 'M' | 'D' | 'E' | 'N' }))}
+                    className={cn(
+                      'flex-1 rounded px-2 py-2 text-xs font-medium transition-colors',
+                      settings.sceneTime === opt.value
+                        ? opt.color
+                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">실내외 (I/E)</label>
+              <div className="flex gap-1">
+                {LOCATION_TYPE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSettings(s => ({ ...s, locationType: opt.value as 'I' | 'E' }))}
+                    className={cn(
+                      'flex-1 rounded px-3 py-2 text-sm font-medium transition-colors',
+                      settings.locationType === opt.value
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <label htmlFor="scene-location" className="text-sm font-medium">촬영장소 (선택)</label>
+            <Input
+              id="scene-location"
+              type="text"
+              placeholder="예: 카페 내부"
+              value={settings.location}
+              onChange={(e) => setSettings(s => ({ ...s, location: e.target.value }))}
+            />
+          </div>
+
+          {/* Preview */}
+          <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-sm text-blue-700 dark:text-blue-300">
+            <p className="font-medium">미리보기</p>
+            <p className="text-xs mt-1">
+              S#{settings.sceneNumber || '?'} - {settings.cutCount}개 컷 생성
+              {settings.sceneNumber && (
+                <span className="ml-1">
+                  ({settings.sceneNumber}-1 ~ {settings.sceneNumber}-{settings.cutCount})
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            취소
+          </Button>
+          <Button
+            onClick={() => onApply(settings)}
+            disabled={!settings.sceneNumber || settings.cutCount < 1}
+          >
+            추가
+          </Button>
+        </div>
+      </div>
+    </>,
+    document.body
   )
 }
 
@@ -476,6 +915,8 @@ export function ShotPlanTable({
   onDeleteRow,
   availableCast = [],
 }: ShotPlanTableProps) {
+  const [isAutoFillModalOpen, setIsAutoFillModalOpen] = useState(false)
+  const [isAddSceneModalOpen, setIsAddSceneModalOpen] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -523,6 +964,111 @@ export function ShotPlanTable({
     [items, onChange]
   )
 
+  // Auto-fill time handler
+  const handleAutoFillTime = useCallback((settings: AutoFillTimeSettings) => {
+    if (items.length === 0) return
+
+    const [startH, startM] = settings.startTime.split(':').map(Number)
+    let currentMinutes = startH * 60 + startM
+
+    // Meal time in minutes
+    let mealTimeMinutes = 0
+    let mealInserted = false
+    if (settings.includeMealTime && settings.mealTime) {
+      const [mealH, mealM] = settings.mealTime.split(':').map(Number)
+      mealTimeMinutes = mealH * 60 + mealM
+    }
+
+    const updatedItems = items.map((item, index) => {
+      // Check if meal time should be inserted before this cut
+      if (
+        settings.includeMealTime &&
+        !mealInserted &&
+        currentMinutes >= mealTimeMinutes &&
+        mealTimeMinutes > startH * 60 + startM
+      ) {
+        // Meal time falls before this cut starts
+        currentMinutes = mealTimeMinutes + settings.mealDuration
+        mealInserted = true
+      }
+
+      // If we haven't passed meal time but this cut will go past meal time
+      if (
+        settings.includeMealTime &&
+        !mealInserted &&
+        currentMinutes < mealTimeMinutes &&
+        currentMinutes + settings.timePerCut > mealTimeMinutes
+      ) {
+        // Start after meal break
+        currentMinutes = mealTimeMinutes + settings.mealDuration
+        mealInserted = true
+      }
+
+      const cutStartMinutes = currentMinutes
+      const cutEndMinutes = cutStartMinutes + settings.timePerCut
+
+      const startTimeStr = `${String(Math.floor(cutStartMinutes / 60)).padStart(2, '0')}:${String(cutStartMinutes % 60).padStart(2, '0')}`
+      const endTimeStr = `${String(Math.floor(cutEndMinutes / 60)).padStart(2, '0')}:${String(cutEndMinutes % 60).padStart(2, '0')}`
+
+      // Move to next cut start time (current cut end + break time)
+      currentMinutes = cutEndMinutes + (index < items.length - 1 ? settings.breakTime : 0)
+
+      return {
+        ...item,
+        start_time: startTimeStr,
+        end_time: endTimeStr,
+      }
+    })
+
+    onChange(updatedItems)
+    setIsAutoFillModalOpen(false)
+  }, [items, onChange])
+
+  // Add scene batch handler
+  const handleAddScene = useCallback((settings: AddSceneSettings) => {
+    const newItems: ShotPlanItem[] = []
+    const startSequence = items.length + 1
+
+    for (let i = 0; i < settings.cutCount; i++) {
+      newItems.push({
+        id: crypto.randomUUID(),
+        sequence: startSequence + i,
+        scene_number: settings.sceneNumber,
+        cut_number: `${settings.sceneNumber}-${i + 1}`,
+        scene_time: settings.sceneTime,
+        scene_location_type: settings.locationType,
+        start_time: null,
+        end_time: null,
+        location: settings.location || null,
+        content: '',
+        cast_ids: [],
+        notes: null,
+      })
+    }
+
+    onChange([...items, ...newItems])
+    setIsAddSceneModalOpen(false)
+  }, [items, onChange])
+
+  // Apply scene values to all cuts with same scene number
+  const handleApplyToSameScene = useCallback((sourceItem: ShotPlanItem) => {
+    if (!sourceItem.scene_number) return
+
+    const updatedItems = items.map((item) => {
+      if (item.scene_number === sourceItem.scene_number && item.id !== sourceItem.id) {
+        return {
+          ...item,
+          scene_time: sourceItem.scene_time,
+          scene_location_type: sourceItem.scene_location_type,
+          location: sourceItem.location,
+        }
+      }
+      return item
+    })
+
+    onChange(updatedItems)
+  }, [items, onChange])
+
   const totalShots = items.length
   const totalTime = useMemo(() => {
     let minutes = 0
@@ -540,12 +1086,44 @@ export function ShotPlanTable({
 
   return (
     <div className="space-y-4">
+      {/* Auto-fill time modal */}
+      <AutoFillTimeModal
+        isOpen={isAutoFillModalOpen}
+        onClose={() => setIsAutoFillModalOpen(false)}
+        onApply={handleAutoFillTime}
+        itemCount={items.length}
+      />
+
+      {/* Add scene modal */}
+      <AddSceneModal
+        isOpen={isAddSceneModalOpen}
+        onClose={() => setIsAddSceneModalOpen(false)}
+        onApply={handleAddScene}
+      />
+
       {/* Toolbar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button onClick={onAddRow} size="sm">
             <Plus className="mr-2 h-4 w-4" />
             행 추가
+          </Button>
+          <Button
+            onClick={() => setIsAddSceneModalOpen(true)}
+            size="sm"
+            variant="outline"
+          >
+            <Film className="mr-2 h-4 w-4" />
+            씬 추가
+          </Button>
+          <Button
+            onClick={() => setIsAutoFillModalOpen(true)}
+            size="sm"
+            variant="outline"
+            disabled={items.length === 0}
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            시간 자동채우기
           </Button>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -577,7 +1155,7 @@ export function ShotPlanTable({
               <th className="min-w-[300px] px-2 py-3">촬영내용</th>
               <th className="w-[150px] px-2 py-3">주요인물</th>
               <th className="w-[150px] px-2 py-3">비고</th>
-              <th className="w-[40px] px-2 py-3"></th>
+              <th className="w-[70px] px-2 py-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -590,15 +1168,23 @@ export function ShotPlanTable({
                 items={items.map((item) => item.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {items.map((item) => (
-                  <SortableRow
-                    key={item.id}
-                    item={item}
-                    onUpdate={handleUpdateItem}
-                    onDelete={onDeleteRow}
-                    availableCast={availableCast}
-                  />
-                ))}
+                {items.map((item) => {
+                  // Check if there are other items with the same scene number
+                  const hasSameSceneItems = item.scene_number
+                    ? items.filter(i => i.scene_number === item.scene_number).length > 1
+                    : false
+                  return (
+                    <SortableRow
+                      key={item.id}
+                      item={item}
+                      onUpdate={handleUpdateItem}
+                      onDelete={onDeleteRow}
+                      onApplyToSameScene={handleApplyToSameScene}
+                      availableCast={availableCast}
+                      hasSameSceneItems={hasSameSceneItems}
+                    />
+                  )
+                })}
               </SortableContext>
             </DndContext>
           </tbody>
