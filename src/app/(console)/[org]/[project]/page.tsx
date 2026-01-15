@@ -134,7 +134,7 @@ export default function ProjectPage() {
           <Button asChild>
             <Link href={`/${org}/${project}/shooting-days`}>
               <Plus className="mr-2 h-4 w-4" />
-              새 촬영일 추가
+              새 일일촬영계획표 추가
             </Link>
           </Button>
         </div>
@@ -143,7 +143,7 @@ export default function ProjectPage() {
         <div className="mb-8 grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">촬영일</CardTitle>
+              <CardTitle className="text-sm font-medium">일일촬영계획표</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -178,17 +178,17 @@ export default function ProjectPage() {
         {/* Recent Activity */}
         <Card>
           <CardHeader>
-            <CardTitle>최근 촬영일</CardTitle>
-            <CardDescription>최근 추가된 촬영 일정</CardDescription>
+            <CardTitle>최근 일일촬영계획표</CardTitle>
+            <CardDescription>최근 추가된 일일촬영계획표</CardDescription>
           </CardHeader>
           <CardContent>
             {recentDays.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
-                <p>아직 촬영일이 없습니다</p>
+                <p>아직 일일촬영계획표가 없습니다</p>
                 <Button asChild variant="outline" className="mt-4">
                   <Link href={`/${org}/${project}/shooting-days`}>
                     <Plus className="mr-2 h-4 w-4" />
-                    촬영일 추가하기
+                    일일촬영계획표 추가하기
                   </Link>
                 </Button>
               </div>

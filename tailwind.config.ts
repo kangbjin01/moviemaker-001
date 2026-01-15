@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -11,22 +12,22 @@ const config: Config = {
       colors: {
         background: 'var(--bg-primary)',
         foreground: 'var(--text-primary)',
-        // Threads-inspired monochrome palette
+        // Threads-inspired monochrome palette (with CSS variables for dark mode)
         primary: {
-          DEFAULT: '#111111',
-          foreground: '#FFFFFF',
+          DEFAULT: 'var(--text-primary)',
+          foreground: 'var(--text-inverse)',
         },
         secondary: {
-          DEFAULT: '#F7F7F7',
-          foreground: '#666666',
+          DEFAULT: 'var(--bg-secondary)',
+          foreground: 'var(--text-secondary)',
         },
         muted: {
-          DEFAULT: '#FAFAFA',
-          foreground: '#999999',
+          DEFAULT: 'var(--bg-tertiary)',
+          foreground: 'var(--text-tertiary)',
         },
-        border: '#E5E5E5',
-        input: '#E5E5E5',
-        ring: '#111111',
+        border: 'var(--border-light)',
+        input: 'var(--border-light)',
+        ring: 'var(--text-primary)',
       },
       borderRadius: {
         sm: '6px',
