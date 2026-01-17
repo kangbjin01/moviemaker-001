@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import { useVehicles, vehicleTypeLabels, vehicleStatusLabels } from '@/modules/vehicles'
 import type { VehicleType, VehicleStatus } from '@/modules/vehicles'
 
@@ -58,25 +58,8 @@ export default function VehiclesPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
-  const [isProjectLoading, setIsProjectLoading] = useState(true)
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-      setIsProjectLoading(false)
-    }
-    fetchProjectId()
-  }, [project, supabase])
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
 
   const { vehicles, isLoading: isDataLoading, addVehicle, updateVehicle, deleteVehicle } = useVehicles(projectId)
 

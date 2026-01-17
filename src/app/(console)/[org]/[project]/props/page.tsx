@@ -13,7 +13,7 @@ import {
   Package,
   Shirt,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import {
   useProps,
   useWardrobe,
@@ -69,34 +69,19 @@ export default function PropsPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [activeTab, setActiveTab] = useState<'props' | 'wardrobe'>('props')
   const [isAdding, setIsAdding] = useState(false)
   const [newName, setNewName] = useState('')
-
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
 
   const { props, isLoading: propsLoading, addProp, updateProp, deleteProp } = useProps(projectId)
   const { wardrobe, isLoading: wardrobeLoading, addWardrobe, updateWardrobe, deleteWardrobe } = useWardrobe(projectId)
   const { scenes } = useScenes(projectId)
   const { characters } = useCharacters(projectId)
 
-  const isLoading = propsLoading || wardrobeLoading
+  const isLoading = isProjectLoading || propsLoading || wardrobeLoading
 
   const handleAdd = async () => {
     if (!projectId || !newName.trim()) return

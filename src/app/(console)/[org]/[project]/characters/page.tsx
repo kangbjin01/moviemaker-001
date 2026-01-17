@@ -15,7 +15,7 @@ import {
   Star,
   UserCheck,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import {
   useCharacters,
   type CharacterType,
@@ -83,30 +83,15 @@ export default function CharactersPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddingCharacter, setIsAddingCharacter] = useState(false)
   const [newCharacterName, setNewCharacterName] = useState('')
 
-  const supabase = createClient()
-
-  // 프로젝트 ID 조회
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { characters, isLoading, addCharacter, updateCharacter, deleteCharacter } = useCharacters(projectId)
+  const { characters, isLoading: isDataLoading, addCharacter, updateCharacter, deleteCharacter } = useCharacters(projectId)
+  const isLoading = isProjectLoading || isDataLoading
 
   // 검색 필터링
   const filteredCharacters = characters.filter(char => {

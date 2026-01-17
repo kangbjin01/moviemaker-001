@@ -16,7 +16,7 @@ import {
   Save,
   Clock,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import {
   useScenarios,
   type Scenario,
@@ -30,32 +30,19 @@ export default function ScenarioPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [isAddingScenario, setIsAddingScenario] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  const supabase = createClient()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { scenarios, isLoading, addScenario, updateScenario, deleteScenario } = useScenarios(projectId)
+  const { scenarios, isLoading: isDataLoading, addScenario, updateScenario, deleteScenario } = useScenarios(projectId)
+  const isLoading = isProjectLoading || isDataLoading
 
   const handleAddScenario = async () => {
     if (!projectId || !newTitle.trim()) return

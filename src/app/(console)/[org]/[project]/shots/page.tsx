@@ -13,7 +13,7 @@ import {
   Video,
   Camera,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import {
   useShots,
   type ShotType,
@@ -66,33 +66,19 @@ export default function ShotsPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [isAddingShot, setIsAddingShot] = useState(false)
   const [newShotNumber, setNewShotNumber] = useState('')
   const [filterSceneId, setFilterSceneId] = useState<string>('')
 
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { shots, isLoading, addShot, updateShot, deleteShot } = useShots(
+  const { shots, isLoading: isDataLoading, addShot, updateShot, deleteShot } = useShots(
     projectId,
     filterSceneId || undefined
   )
   const { scenes } = useScenes(projectId)
+  const isLoading = isProjectLoading || isDataLoading
 
   const handleAddShot = async () => {
     if (!projectId || !newShotNumber.trim()) return

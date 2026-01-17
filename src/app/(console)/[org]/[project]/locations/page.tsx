@@ -19,7 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import { useLocations, type Location } from '@/modules/location-master'
 import { cn } from '@/lib/utils/cn'
 
@@ -28,31 +28,16 @@ export default function LocationsPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddingLocation, setIsAddingLocation] = useState(false)
   const [newLocationName, setNewLocationName] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const supabase = createClient()
-
-  // 프로젝트 ID 조회
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { locations, isLoading, addLocation, updateLocation, deleteLocation } = useLocations(projectId)
+  const { locations, isLoading: isDataLoading, addLocation, updateLocation, deleteLocation } = useLocations(projectId)
+  const isLoading = isProjectLoading || isDataLoading
 
   // 검색 필터링
   const filteredLocations = locations.filter(loc => {

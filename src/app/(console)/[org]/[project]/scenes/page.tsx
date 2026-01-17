@@ -20,7 +20,7 @@ import {
   Sunrise,
   Sunset,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import { useScenes, type Scene, type TimeOfDay, type LocationType } from '@/modules/scene-master'
 
 // 한글 입력을 위한 EditableInput 컴포넌트
@@ -79,30 +79,15 @@ export default function ScenesPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddingScene, setIsAddingScene] = useState(false)
   const [newSceneNumber, setNewSceneNumber] = useState('')
 
-  const supabase = createClient()
-
-  // 프로젝트 ID 조회
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { scenes, isLoading, addScene, updateScene, deleteScene } = useScenes(projectId)
+  const { scenes, isLoading: isDataLoading, addScene, updateScene, deleteScene } = useScenes(projectId)
+  const isLoading = isProjectLoading || isDataLoading
 
   // 검색 필터링
   const filteredScenes = scenes.filter(scene => {

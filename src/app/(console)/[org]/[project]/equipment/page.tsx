@@ -14,7 +14,7 @@ import {
   Lightbulb,
   Mic,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { useProject } from '@/contexts/project-context'
 import {
   useEquipment,
   type EquipmentCategory,
@@ -81,33 +81,19 @@ export default function EquipmentPage() {
   const org = params.org as string
   const project = params.project as string
 
-  const [projectId, setProjectId] = useState<string | null>(null)
+  // Context에서 projectId 가져오기
+  const { projectId, isLoading: isProjectLoading } = useProject()
+
   const [isAddingEquipment, setIsAddingEquipment] = useState(false)
   const [newName, setNewName] = useState('')
   const [newCategory, setNewCategory] = useState<EquipmentCategory>('camera')
   const [filterCategory, setFilterCategory] = useState<EquipmentCategory | ''>('')
 
-  const supabase = createClient()
-
-  useEffect(() => {
-    async function fetchProjectId() {
-      const { data } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('slug', project)
-        .single<{ id: string }>()
-
-      if (data) {
-        setProjectId(data.id)
-      }
-    }
-    fetchProjectId()
-  }, [project, supabase])
-
-  const { equipment, isLoading, addEquipment, updateEquipment, deleteEquipment } = useEquipment(
+  const { equipment, isLoading: isDataLoading, addEquipment, updateEquipment, deleteEquipment } = useEquipment(
     projectId,
     filterCategory || undefined
   )
+  const isLoading = isProjectLoading || isDataLoading
 
   const handleAddEquipment = async () => {
     if (!projectId || !newName.trim()) return
