@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import { createClient } from '@/lib/supabase/client'
+import { getGroupedModules, phaseLabels } from '@/modules'
+import type { ProductionPhase } from '@/lib/modules/module-types'
 import {
   Film,
-  Calendar,
   Users,
   Settings,
   Home,
@@ -34,8 +35,13 @@ export function Sidebar({ org, project }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
   const [currentProjectName, setCurrentProjectName] = useState<string>('')
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
 
   // Fetch projects
   useEffect(() => {
@@ -89,28 +95,11 @@ export function Sidebar({ org, project }: SidebarProps) {
     router.push(`/${org}/${projectSlug}`)
   }
 
-  const navigation = [
-    {
-      name: '대시보드',
-      href: org && project ? `/${org}/${project}` : '/',
-      icon: Home,
-    },
-    {
-      name: '피플',
-      href: org && project ? `/${org}/${project}/people` : '#',
-      icon: Users,
-    },
-    {
-      name: '일일촬영계획표',
-      href: org && project ? `/${org}/${project}/shooting-days` : '#',
-      icon: Calendar,
-    },
-    {
-      name: '파일',
-      href: org && project ? `/${org}/${project}/files` : '#',
-      icon: FolderOpen,
-    },
-  ]
+  // 그룹화된 모듈
+  const groupedModules = getGroupedModules()
+
+  // 표시할 단계 순서
+  const phaseOrder: ProductionPhase[] = ['master', 'pre', 'production', 'post']
 
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-background">
@@ -169,23 +158,92 @@ export function Sidebar({ org, project }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
+      <nav className="flex-1 overflow-y-auto p-2">
+        {/* 대시보드 */}
+        <Link
+          href={org && project ? `/${org}/${project}` : '/'}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+            pathname === `/${org}/${project}`
+              ? 'bg-secondary font-medium text-foreground'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          )}
+        >
+          <Home className="h-4 w-4" />
+          대시보드
+        </Link>
+
+        {/* 피플 */}
+        <Link
+          href={org && project ? `/${org}/${project}/people` : '#'}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+            pathname === `/${org}/${project}/people`
+              ? 'bg-secondary font-medium text-foreground'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          )}
+        >
+          <Users className="h-4 w-4" />
+          피플
+        </Link>
+
+        {/* 파일 */}
+        <Link
+          href={org && project ? `/${org}/${project}/files` : '#'}
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+            pathname === `/${org}/${project}/files`
+              ? 'bg-secondary font-medium text-foreground'
+              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+          )}
+        >
+          <FolderOpen className="h-4 w-4" />
+          파일
+        </Link>
+
+        {/* 단계별 모듈 그룹 */}
+        {phaseOrder.map((phase) => {
+          const modules = groupedModules[phase]
+          if (modules.length === 0) return null
+
+          const isCollapsed = collapsedSections[phase]
+
           return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-secondary font-medium text-foreground'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+            <div key={phase} className="mt-4">
+              <button
+                onClick={() => toggleSection(phase)}
+                className="flex w-full items-center justify-between px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <span>{phaseLabels[phase]}</span>
+                <ChevronDown className={cn(
+                  "h-3 w-3 transition-transform",
+                  isCollapsed && "-rotate-90"
+                )} />
+              </button>
+              {!isCollapsed && (
+                <div className="mt-1 space-y-0.5">
+                  {modules.map((module) => {
+                    const href = org && project ? `/${org}/${project}${module.basePath}` : '#'
+                    const isActive = pathname === href
+                    return (
+                      <Link
+                        key={module.id}
+                        href={href}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                          isActive
+                            ? 'bg-secondary font-medium text-foreground'
+                            : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                        )}
+                      >
+                        <module.icon className="h-4 w-4" />
+                        {module.shortName}
+                      </Link>
+                    )
+                  })}
+                </div>
               )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.name}
-            </Link>
+            </div>
           )
         })}
       </nav>
